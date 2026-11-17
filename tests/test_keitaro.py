@@ -96,3 +96,22 @@ def test_missing_key_does_not_make_request():
     with KeitaroClient("https://tracker.example", "") as client:
         with pytest.raises(RemoteError, match="KEITARO_API_KEY"):
             client.get("offers")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"id": 12, "state": "active"},
+        {"id": 13, "name": "Wrong offer", "state": "active"},
+        {"id": True, "name": "Invalid ID", "state": "active"},
+        {"id": 12, "name": None, "state": "active"},
+    ],
+)
+def test_offer_requires_matching_id_and_string_name(payload):
+    with KeitaroClient(
+        "https://tracker.example",
+        "test-secret",
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
+    ) as client:
+        with pytest.raises(RemoteError):
+            client.offer(12)

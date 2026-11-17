@@ -65,26 +65,26 @@ class KeitaroClient:
     def get(self, path: str, params=None):
         return self._request("GET", path, params=params)
 
-    def post(self, path: str, data: dict):
+    def post(self, path: str, data: dict[str, Any]):
         return self._request("POST", path, data)
 
-    def put(self, path: str, data: dict):
+    def put(self, path: str, data: dict[str, Any]):
         return self._request("PUT", path, data)
 
-    def _list(self, path: str, params=None) -> list[dict]:
+    def _list(self, path: str, params=None) -> list[dict[str, Any]]:
         data = self.get(path, params=params)
         if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
             raise RemoteError("Keitaro вернул неожиданный формат списка.")
         return data
 
-    def catalogs(self) -> dict[str, list[dict]]:
+    def catalogs(self) -> dict[str, list[dict[str, Any]]]:
         return {
             "domains": self._list("domains"),
             "groups": self._list("groups", {"type": "campaigns"}),
             "traffic_sources": self._list("traffic_sources"),
         }
 
-    def campaigns(self) -> list[dict]:
+    def campaigns(self) -> list[dict[str, Any]]:
         result = []
         for offset in range(0, 10000, 100):
             page = self._list("campaigns", {"limit": 100, "offset": offset})
@@ -93,7 +93,7 @@ class KeitaroClient:
                 return result
         raise RemoteError("Слишком много кампаний для локального редактора (более 10000).")
 
-    def search_offers(self, query: str, limit: int = 30) -> list[dict]:
+    def search_offers(self, query: str, limit: int = 30) -> list[dict[str, Any]]:
         query = query.strip().casefold()
         offers = [
             item
@@ -104,7 +104,7 @@ class KeitaroClient:
         offers.sort(key=lambda item: (str(item["id"]) != query, item["id"]))
         return [{"id": x["id"], "name": x["name"]} for x in offers[:limit]]
 
-    def offer(self, offer_id: int) -> dict:
+    def offer(self, offer_id: int) -> dict[str, Any]:
         try:
             data = self.get(f"offers/{offer_id}")
         except RemoteError as error:
@@ -113,7 +113,12 @@ class KeitaroClient:
 
                 raise DomainError("Оффер не найден в Keitaro.", code="offer_missing") from None
             raise
-        if not isinstance(data, dict) or not isinstance(data.get("id"), int):
+        if (
+            not isinstance(data, dict)
+            or type(data.get("id")) is not int
+            or data["id"] != offer_id
+            or not isinstance(data.get("name"), str)
+        ):
             raise RemoteError("Keitaro вернул неожиданный формат оффера.")
         if data.get("state") == "deleted":
             from app.errors import DomainError

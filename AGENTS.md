@@ -19,3 +19,8 @@
 - Later-stage files may be present untracked: keep them out of the current PR.
 - Do not add a standalone CLI or other user entry points beyond the requested
   FastAPI API and web interface. Verify backend services with tests.
+- Stream uses SQLAlchemy optimistic versioning: increment revision on every
+  association/pending-state change in the same transaction; do not bypass it
+  with bulk updates or rely on a Python lock for revision correctness.
+- After an uncertain remote write, reading the old baseline does not prove the
+  write finished. Reconciliation must not resend PUT or unlock the draft.
