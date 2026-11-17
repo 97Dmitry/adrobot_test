@@ -14,3 +14,6 @@
 - User explicitly authorized branches, commits, pushes, PRs and merges to main
   on 2026-11-17. Use a feature branch and reviewed PR per implementation stage.
   Stage only named relevant files; never include `.env`, local DBs or artifacts.
+- Stop after opening each PR and await the user's acceptance. Merge only after
+  acceptance; after creating a PR, briefly explain the decisions and verification.
+- Later-stage files may be present untracked: keep them out of the current PR.
