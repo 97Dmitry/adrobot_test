@@ -130,11 +130,82 @@ function comparableCreation(body) {
 function autocomplete(input, list, hint, resource) {
   let timer;
   let sequence = 0;
+  let items = [];
+  let active = -1;
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-autocomplete", "list");
+  input.setAttribute("aria-controls", list.id);
+  input.setAttribute("aria-expanded", "false");
+  hint.id ||= `${input.id}-hint`;
+  input.setAttribute("aria-describedby", hint.id);
+  list.setAttribute("role", "listbox");
+  list.setAttribute("aria-label", "Результаты поиска");
+
+  function hide() {
+    list.hidden = true;
+    active = -1;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+  }
+  function show(index = -1) {
+    if (working || input.disabled || !items.length) return;
+    active = index;
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    const options = [...list.querySelectorAll(".search-option")];
+    options.forEach((option, i) => {
+      option.disabled = false;
+      option.setAttribute("aria-selected", String(i === active));
+    });
+    if (active >= 0) {
+      input.setAttribute("aria-activedescendant", options[active].id);
+      options[active].scrollIntoView({ block: "nearest" });
+    } else input.removeAttribute("aria-activedescendant");
+  }
+  function choose(index) {
+    if (working || input.disabled) return;
+    input.value = String(items[index].id);
+    hint.textContent = items[index].name;
+    hide();
+  }
+  input.addEventListener("keydown", (event) => {
+    if (working || input.disabled) return;
+    if (
+      (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+      items.length
+    ) {
+      event.preventDefault();
+      const next =
+        active < 0
+          ? event.key === "ArrowDown"
+            ? 0
+            : items.length - 1
+          : (active + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
+            items.length;
+      show(next);
+    } else if (event.key === "Enter" && !list.hidden && active >= 0) {
+      event.preventDefault();
+      choose(active);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      clearTimeout(timer);
+      sequence++;
+      hide();
+    }
+  });
+  input.addEventListener("blur", () => {
+    clearTimeout(timer);
+    sequence++;
+    hide();
+  });
+  list.addEventListener("pointerdown", (event) => event.preventDefault());
   input.addEventListener("input", () => {
     clearTimeout(timer);
     const request = ++sequence;
     const query = input.value.trim();
+    items = [];
     list.replaceChildren();
+    hide();
     if (!query) {
       hint.textContent = "Введите ID или название";
       return;
@@ -142,19 +213,40 @@ function autocomplete(input, list, hint, resource) {
     hint.textContent = "Поиск…";
     timer = setTimeout(async () => {
       try {
-        const items = await api(`/${resource}?q=${encodeURIComponent(query)}`);
+        const result = await api(`/${resource}?q=${encodeURIComponent(query)}`);
         if (request !== sequence || !input.isConnected) return;
+        items = result;
         list.replaceChildren(
-          ...items.map((item) =>
-            node("option", { value: String(item.id), label: item.name }),
+          ...items.map((item, index) =>
+            node(
+              "li",
+              { role: "presentation" },
+              node(
+                "button",
+                {
+                  id: `${list.id}-${index}`,
+                  type: "button",
+                  class: "search-option",
+                  role: "option",
+                  tabIndex: -1,
+                  "aria-selected": "false",
+                  disabled: working || input.disabled,
+                  onclick: () => choose(index),
+                },
+                node("span", { class: "result-id", text: `#${item.id}` }),
+                node("span", { class: "result-name", text: item.name }),
+              ),
+            ),
           ),
         );
         const exact = items.find((item) => String(item.id) === query);
         hint.textContent = exact
           ? exact.name
           : items.length
-            ? `Найдено: ${items.length}. Выберите вариант из списка.`
+            ? `Найдено: ${items.length}. Выберите мышью или стрелками и Enter.`
             : "Ничего не найдено";
+        // A complete ID needs no choice; keep its name in the hint and actions reachable.
+        if (document.activeElement === input && !exact) show();
       } catch (error) {
         if (request === sequence && input.isConnected)
           hint.textContent = error.message;
@@ -337,7 +429,7 @@ function renderStream(stream) {
       if (offer.active) {
         controls.append(
           button(
-            offer.pin === null ? "Pin" : "Сохранить Pin",
+            offer.pin === null ? "Закрепить" : "Сохранить",
             "",
             () =>
               runStream(
@@ -353,7 +445,7 @@ function renderStream(stream) {
         if (offer.pin !== null)
           controls.append(
             button(
-              "Unpin",
+              "Снять",
               "",
               () => runStream(stream, "edit", offer.offer_id, "unpin"),
               stream.pending || !stream.editable,
@@ -363,7 +455,7 @@ function renderStream(stream) {
         controls.append(
           node("span", {
             class: "hint",
-            text: offer.pin !== null ? `Pin ${offer.pin}%` : "—",
+            text: offer.pin !== null ? `Закреплено ${offer.pin}%` : "—",
           }),
         );
       tr.append(node("td", {}, controls));
@@ -372,7 +464,7 @@ function renderStream(stream) {
           "td",
           { class: "offer-action" },
           button(
-            offer.active ? "Remove" : "Bring back",
+            offer.active ? "Удалить" : "Вернуть",
             "",
             () =>
               runStream(
@@ -395,12 +487,15 @@ function renderStream(stream) {
     const input = node("input", {
       id: searchID,
       type: "text",
-      list: `offer-options-${stream.id}`,
       placeholder: "ID или название оффера",
       autocomplete: "off",
       disabled: stream.pending,
     });
-    const list = node("datalist", { id: `offer-options-${stream.id}` });
+    const list = node("ul", {
+      id: `offer-options-${stream.id}`,
+      class: "search-results",
+      hidden: true,
+    });
     const hint = node("span", {
       class: "hint search-hint",
       "aria-live": "polite",
@@ -420,7 +515,7 @@ function renderStream(stream) {
       stream.pending,
     );
     input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && !event.defaultPrevented) {
         event.preventDefault();
         add.click();
       }
@@ -456,13 +551,13 @@ function renderStream(stream) {
           "div",
           { class: "buttons" },
           button(
-            "Cancel",
+            "Отменить",
             "secondary",
             () => runStream(stream, "cancel"),
             !stream.dirty || stream.pending,
           ),
           button(
-            "Publish",
+            "Опубликовать",
             "primary",
             () => runStream(stream, "publish"),
             (!stream.dirty && !stream.pending) ||
@@ -479,7 +574,7 @@ function renderStream(stream) {
       node(
         "div",
         { class: "stream-bottom" },
-        button("Cancel", "secondary", () => runStream(stream, "cancel")),
+        button("Отменить", "secondary", () => runStream(stream, "cancel")),
       ),
     );
   }
@@ -492,7 +587,7 @@ function renderStream(stream) {
       node("p", {
         class: "notice",
         text: stream.pending
-          ? "Результат публикации неизвестен. Publish сверит состояние без повторной записи. Если результат не подтверждён, требуется ручная сверка в Keitaro."
+          ? "Результат публикации неизвестен. Кнопка «Опубликовать» сверит состояние без повторной записи. Если результат не подтверждён, требуется ручная сверка в Keitaro."
           : stream.notice ||
             "Для публикации сумма активных весов должна быть 100%.",
       }),
@@ -519,7 +614,7 @@ async function selectCampaign(id, sync = true) {
         current = await api(`/campaigns/${id}`);
         store("adrobot.campaign", id);
         message(
-          "Открыт сохранённый черновик. Перед синхронизацией выполните Publish или Cancel.",
+          "Открыт сохранённый черновик. Перед синхронизацией опубликуйте или отмените изменения.",
         );
       } catch (localError) {
         message(localError.message);
@@ -616,6 +711,7 @@ $("#creator").addEventListener("submit", async (event) => {
     result = await api("/campaigns", "POST", body, {
       "Idempotency-Key": operation.key,
     });
+    $("#creator-panel").open = false;
     $("#creation-result").textContent =
       `Кампания #${result.campaign_id} создана. Повторная отправка этой формы вернёт ту же кампанию.`;
   } catch (error) {
@@ -655,6 +751,7 @@ $("#retry-connection").addEventListener("click", () => {
 });
 $("#new-operation").addEventListener("click", () => {
   if (working) return;
+  $("#creator-panel").open = true;
   store("adrobot.creation", null);
   $("#creation-result").textContent = "";
   $("#campaign-name").value = "test_tsybizov_";

@@ -19,10 +19,29 @@
     <div id="message" class="message" role="alert" hidden></div>
     <main class="layout">
       <aside class="sidebar">
-        <section class="panel">
-          <div class="section-title">
-            <h1>Новая кампания</h1>
-          </div>
+        <section class="panel campaign-picker">
+          <h2>Открыть кампанию</h2>
+          <form id="campaign-loader">
+            <label for="campaign-search">Поиск по названию или ID</label>
+            <div class="search-field">
+              <input
+                id="campaign-search"
+                placeholder="Введите ID или название"
+                autocomplete="off"
+                required
+              />
+              <ul id="campaign-options" class="search-results" hidden></ul>
+            </div>
+            <span id="campaign-search-hint" class="hint" aria-live="polite"
+              >Выберите кампанию, чтобы загрузить потоки</span
+            >
+            <button class="secondary wide" type="submit">
+              Загрузить потоки
+            </button>
+          </form>
+        </section>
+        <details id="creator-panel" class="panel creator-panel">
+          <summary>Новая кампания</summary>
           <p class="subtle">Гео → Google. Остальные посетители → оффер.</p>
           <form id="creator">
             <fieldset id="creator-fields" disabled>
@@ -45,15 +64,16 @@
               />
               <span class="hint">Двухбуквенные ISO-коды через запятую</span>
               <label for="creator-offer">Оффер</label>
-              <input
-                id="creator-offer"
-                name="offer"
-                list="creator-offers"
-                placeholder="Поиск по ID или названию"
-                required
-                autocomplete="off"
-              />
-              <datalist id="creator-offers"></datalist>
+              <div class="search-field">
+                <input
+                  id="creator-offer"
+                  name="offer"
+                  placeholder="Поиск по ID или названию"
+                  required
+                  autocomplete="off"
+                />
+                <ul id="creator-offers" class="search-results" hidden></ul>
+              </div>
               <span id="creator-offer-hint" class="hint" aria-live="polite"
                 >Выберите существующий оффер Keitaro</span
               >
@@ -70,6 +90,8 @@
               </button>
             </fieldset>
           </form>
+        </details>
+        <div class="creation-status">
           <p id="creation-result" class="hint" aria-live="polite"></p>
           <button id="new-operation" class="text-button" type="button" hidden>
             Начать новую операцию
@@ -82,30 +104,10 @@
           >
             Повторить подключение
           </button>
-        </section>
-        <section class="panel campaign-picker">
-          <h2>Открыть кампанию</h2>
-          <form id="campaign-loader">
-            <label for="campaign-search">Поиск по названию или ID</label>
-            <input
-              id="campaign-search"
-              list="campaign-options"
-              placeholder="Введите ID или название"
-              autocomplete="off"
-              required
-            />
-            <datalist id="campaign-options"></datalist>
-            <span id="campaign-search-hint" class="hint" aria-live="polite"
-              >Выберите кампанию, чтобы загрузить потоки</span
-            >
-            <button class="secondary wide" type="submit">
-              Загрузить потоки
-            </button>
-          </form>
-        </section>
+        </div>
         <p class="sidebar-note">
           Черновики сохраняются автоматически.<br />В Keitaro изменения попадают
-          после Publish.
+          после публикации.
         </p>
       </aside>
       <section class="workspace" aria-label="Редактор кампании">
