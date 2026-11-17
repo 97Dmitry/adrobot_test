@@ -43,7 +43,15 @@ def ui_url(tracker, sessions):
 
 
 @pytest.mark.parametrize("width,height", [(1440, 1000), (390, 844)])
-def test_complete_ui_flow(ui_url, tracker, width, height):
+def test_complete_ui_flow(ui_url, tracker, monkeypatch, width, height):
+    original_route = tracker.route
+
+    def delayed_write(method, path, body, params):
+        if method == "PUT" and path == "streams/201":
+            time.sleep(0.2)
+        return original_route(method, path, body, params)
+
+    monkeypatch.setattr(tracker, "route", delayed_write)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         page = browser.new_page(viewport={"width": width, "height": height})
@@ -77,6 +85,7 @@ def test_complete_ui_flow(ui_url, tracker, width, height):
         first.get_by_role("button", name="Remove", exact=True).click()
         expect(first.locator(".weight")).to_have_text("0%")
         stream.get_by_role("button", name="Publish", exact=True).click()
+        expect(stream.locator(".badge")).to_have_text("Опубликован")
         expect(first).to_have_class("archived")
         assert all(o["offer_id"] != 10 for o in tracker.streams[201]["offers"])
         first.get_by_role("button", name="Bring back", exact=True).click()
