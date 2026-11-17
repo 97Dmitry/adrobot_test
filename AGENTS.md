@@ -24,3 +24,7 @@
   with bulk updates or rely on a Python lock for revision correctness.
 - After an uncertain remote write, reading the old baseline does not prove the
   write finished. Reconciliation must not resend PUT or unlock the draft.
+- Run browser checks with RUN_BROWSER=1 against FakeTracker, never the shared
+  account. RUN_HTTP_LIVE=1 explicitly enables the isolated real HTTP acceptance.
+- API mutations require Content-Type: application/json, including bodyless Sync.
+  Default hosts are local; the app has no built-in authentication.
