@@ -1,0 +1,38 @@
+[project]
+name = "adrobot-keitaro-wrapper"
+version = "0.1.0"
+description = "Local Keitaro campaign creator and offer editor"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "alembic>=1.16,<2",
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "pydantic-settings>=2.8,<3",
+  "pycountry>=24.6",
+  "sqlalchemy>=2.0,<2.1",
+  "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "hypothesis>=6,<7",
+    "ruff>=0.11,<1",
+    "playwright>=1.50,<2",
+    "httpx2>=2.16.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
