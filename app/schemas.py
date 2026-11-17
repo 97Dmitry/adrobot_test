@@ -1,13 +1,14 @@
 from typing import Annotated
 
 import pycountry
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 PREFIX = "test_tsybizov_"
 PositiveID = Annotated[int, Field(strict=True, gt=0)]
 
 
 class CreateCampaign(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=1, max_length=240)
     countries: list[str] = Field(min_length=1, max_length=249)
     offer_id: PositiveID

@@ -9,3 +9,4 @@ class Settings(BaseSettings):
     keitaro_api_key: SecretStr = SecretStr("")
     keitaro_timeout: float = 20
     database_url: str = "sqlite:///./adrobot.db"
+    allowed_hosts: list[str] = ["127.0.0.1", "localhost", "[::1]"]
