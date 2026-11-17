@@ -3,6 +3,8 @@
 - User-facing plans, findings and documentation are in Russian.
 - Follow SDD: `docs/specs/001-keitaro-wrapper/spec.md` is the requirements source.
   Read its status before implementation. Plan/tasks/verification belong beside it.
+- UI polish is scoped in `docs/specs/002-ui-ux-polish/spec.md`; keep that iteration
+  limited to presentation/search interaction without changing backend semantics.
 - Stack required by the assignment: FastAPI + SQLAlchemy; use Alembic migrations.
 - Never put API keys in tracked files, test fixtures, frontend responses or logs.
 - Campaigns created by the app and live checks must start with `test_tsybizov_`.
