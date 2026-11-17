@@ -4,7 +4,7 @@
 > Общая спецификация: [spec.md](spec.md). Пользователь разрешил реализацию.
 
 **Цель:** работающий локальный редактор Keitaro с воспроизводимой проверкой ТЗ.
-**Архитектура:** один FastAPI-процесс, синхронный httpx-клиент, SQLAlchemy 2,
+**Архитектура:** FastAPI, синхронный httpx-клиент, SQLAlchemy 2,
 SQLite и Alembic. Сервер отдаёт статический интерфейс и JSON API.
 **Стек:** Python 3.12+, FastAPI, SQLAlchemy, Alembic, httpx, pytest, Hypothesis.
 
@@ -12,7 +12,8 @@ SQLite и Alembic. Сервер отдаёт статический интерф
 
 - Имена создаваемых кампаний начинаются с `test_tsybizov_`.
 - Ключ только в `.env`/окружении, никогда в браузере или tracked-файлах.
-- Один worker, локальное использование, сериализация изменений одного процесса.
+- Отдельная Session на запрос; ревизии защищены version_id_col SQLAlchemy,
+  без общего Python-lock и ограничения числом операторов.
 - Все записи Keitaro через клиент приложения, без автоматических повторов.
 - Коммиты/push/PR/merge разрешены: отдельная ветка и PR на каждый этап.
   Worktree не создаётся; изменения делаются в текущем checkout.
@@ -37,6 +38,8 @@ SQLite и Alembic. Сервер отдаёт статический интерф
 - `app/creator.py`: `create_campaign(session, client, request, key)`.
 - `app/weights.py`: `distribute(pins: list[int | None]) -> list[int]`.
 - `app/editor.py`: import/sync, edit/cancel/publish и сериализация состояния.
+- `app/editor_state.py`, `publication.py`, `snapshots.py`: views/commit,
+  публикация и проверка снимков без разбора посторонних полей потоков.
 - `app/main.py`: `create_app(settings=None, client=None)` для DI и тестов.
 - `app/static/`: HTML, CSS и JavaScript без внешних CDN.
 - `migrations/`: явные версии Alembic; schema не создаётся на старте приложения.

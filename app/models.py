@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import JSON, CheckConstraint, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -15,7 +16,7 @@ class Campaign(Base):
     name: Mapped[str] = mapped_column(String(255))
     tracking_url: Mapped[str] = mapped_column(default="")
     state: Mapped[str] = mapped_column(default="active")
-    synced_at: Mapped[datetime | None]
+    synced_at: Mapped[datetime | None] = mapped_column()
     streams: Mapped[list["Stream"]] = relationship(
         back_populates="campaign", order_by="Stream.position"
     )
@@ -26,12 +27,13 @@ class Stream(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id"), index=True)
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column()
     position: Mapped[int] = mapped_column(default=0)
     schema_name: Mapped[str] = mapped_column(default="")
-    baseline: Mapped[dict] = mapped_column(JSON, default=dict)
-    pending: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    baseline: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    pending: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     revision: Mapped[int] = mapped_column(default=1)
+    __mapper_args__ = {"version_id_col": revision, "version_id_generator": False}
     dirty: Mapped[bool] = mapped_column(default=False)
     missing: Mapped[bool] = mapped_column(default=False)
     notice: Mapped[str] = mapped_column(default="")
@@ -45,7 +47,7 @@ class Offer(Base):
     __tablename__ = "offers"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column()
 
 
 class StreamOffer(Base):
@@ -61,13 +63,13 @@ class StreamOffer(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     stream_id: Mapped[int] = mapped_column(ForeignKey("streams.id"), index=True)
     offer_id: Mapped[int] = mapped_column(ForeignKey("offers.id"))
-    position: Mapped[int]
+    position: Mapped[int] = mapped_column()
     active: Mapped[bool] = mapped_column(default=True)
     share: Mapped[int] = mapped_column(default=0)
-    pin: Mapped[int | None]
+    pin: Mapped[int | None] = mapped_column()
     published_active: Mapped[bool] = mapped_column(default=False)
     published_share: Mapped[int] = mapped_column(default=0)
-    published_pin: Mapped[int | None]
+    published_pin: Mapped[int | None] = mapped_column()
     ever_published: Mapped[bool] = mapped_column(default=False)
     stream: Mapped[Stream] = relationship(back_populates="offers")
     offer: Mapped[Offer] = relationship()
@@ -77,10 +79,10 @@ class CreationOperation(Base):
     __tablename__ = "creation_operations"
 
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
-    fingerprint: Mapped[str]
-    request: Mapped[dict] = mapped_column(JSON)
+    fingerprint: Mapped[str] = mapped_column()
+    request: Mapped[dict[str, Any]] = mapped_column(JSON)
     alias: Mapped[str] = mapped_column(String(100), unique=True)
-    campaign_id: Mapped[int | None]
+    campaign_id: Mapped[int | None] = mapped_column()
     phase: Mapped[str] = mapped_column(default="starting")
     error: Mapped[str] = mapped_column(default="")
-    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

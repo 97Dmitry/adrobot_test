@@ -3,7 +3,7 @@
 > Исполнитель: `superpowers:executing-plans`. Спецификация: [../spec.md](../spec.md).
 
 **Цель:** использовать все сценарии через браузер и воспроизвести запуск по README.
-**Архитектура:** JSON API + статическая страница с того же origin; один worker.
+**Архитектура:** JSON API + статическая страница с того же origin.
 **Стек:** FastAPI, vanilla JavaScript, CSS, Playwright для проверки.
 
 ## Задачи
@@ -11,7 +11,9 @@
 - [ ] D1. `tests/test_api.py`: TestClient, DI, ошибки, revision, идемпотентность,
   поиск, формы и health; unsafe origins отклоняются. RED → GREEN.
 - [ ] D2. `app/main.py`: `create_app(settings=None, client=None)`; маршруты из
-  общего плана, один RLock для операций, безопасные JSON-ошибки.
+  общего плана, отдельная Session на запрос, безопасные JSON-ошибки.
+  Ревизии защищены в сервисах и БД; общий RLock не нужен. Pin принимает 0..100;
+  нулевая активная доля не отображается как архивная строка.
 - [ ] D3. `app/static/index.html`, `app.js`, `style.css`: слева создание/выбор,
   справа рабочие потоки. Палитра white #fff, navy #18384b, blue #126899,
   slate #526978, amber #fff4cc, archive #f0f3f5. Системная sans-serif,

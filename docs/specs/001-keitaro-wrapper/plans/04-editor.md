@@ -6,25 +6,54 @@
 **Архитектура:** baseline и draft в StreamOffer, снимок API и durable intent в Stream.
 **Стек:** SQLAlchemy, чистый алгоритм весов, клиент основы.
 
+## Решения перед реализацией
+
+- `Stream.revision` используется как SQLAlchemy version_id_col с явным
+  увеличением: UPDATE содержит прежнюю ревизию в WHERE, конфликт откатывает
+  всю локальную транзакцию. Схема таблиц не меняется.
+- Сохранённое намерение содержит target и фазу sending/unknown. Повторная
+  публикация во время sending только сверяет результат и не дублирует PUT.
+  При потере связи unknown сохраняет черновик и блокирует edit/Cancel до сверки.
+- Интерфейс импортирует все названия потоков, но не интерпретирует фильтры,
+  редиректы и содержимое потоков без офферов.
+- Snapshot сравнивает schema и offer_id/share/state; порядок ответа API,
+  служебные ID привязок и timestamp не создают ложный конфликт.
+- `app/editor.py`: импорт, чтение, локальные правки и Cancel;
+  `app/publication.py`: Publish и сверка; `app/editor_state.py`: общие view,
+  загрузка и commit с контролем ревизии; `app/snapshots.py`: проверка JSON.
+  Publish остаётся доступен как публичный импорт `app.editor.publish_stream`.
+
 ## Задачи
 
-- [ ] E1. `tests/test_editor.py`: импорт всех потоков, no-offer passthrough,
+- [x] E1. `tests/test_editor.py`: импорт всех потоков, no-offer passthrough,
   неизвестное поле, внешний remove/add, пустой внешний поток, удалённый поток,
   сохранение/снятие pin. `uv run pytest tests/test_editor.py -q`: RED → GREEN.
-- [ ] E2. `app/editor.py`: `sync_campaign(session, client, campaign_id)` и
+- [x] E2. `app/editor.py`: `sync_campaign(session, client, campaign_id)` и
   `campaign_view(session, campaign_id)`; импорт без перерасчёта, архив вместо delete.
-- [ ] E3. Тесты Add/Remove/Restore/Pin/Unpin, ошибки без частичных изменений,
+- [x] E3. Тесты Add/Remove/Restore/Pin/Unpin, ошибки без частичных изменений,
   Cancel новой привязки, сохранение архива, новая сессия и stale revision.
-- [ ] E4. `edit_offer(session, client, stream_id, revision, offer_id, action, pin)`;
+- [x] E4. `edit_offer(session, client, stream_id, revision, offer_id, action, pin)`;
   `cancel_stream(...)`; dirty сравнивает baseline/draft и закрепления.
   Диапазон pin — 0..100; нулевой вес активной строки не делает её архивной.
   В `distribute` передаются только активные строки в стабильном порядке.
-- [ ] E5. Тесты Publish: только offers в PUT, конфликт не пишет, пустой набор
+- [x] E5. Тесты Publish: только offers в PUT, конфликт не пишет, пустой набор
   запрещён, timeout до/после применения, повтор после локального сбоя,
   неизвестный исход блокирует редактирование/Cancel до сверки.
-- [ ] E6. `publish_stream(session, client, stream_id, revision)` сохраняет intent
+- [x] E6. `publish_stream(session, client, stream_id, revision)` сохраняет intent
   до PUT; сверяет snapshot; читает результат, завершает baseline либо сохраняет
   состояние сверки. Сверка по baseline/target, без слепого повторного PUT.
 
 **Вход:** модели/клиент F и `distribute` W. **Выход:** сервисы для API/UI.
 **Приёмка:** VT2/VT4; каждый тест использует новую временную SQLite и fake Keitaro.
+
+Результат: 39 тестов редактора, полный набор 107 passed / 1 skipped.
+Опциональный live-тест отдельно включён и пройден на кампании #213017,
+после проверки новая кампания отключена. Замечания review по позднему PUT
+и неполному ответу оффера воспроизведены RED и исправлены до GREEN.
+
+Фаза unknown хранит подтверждение полного ответа PUT, если оно получено.
+Если ответ PUT уже подтвердил target, последующее отличающееся чтение —
+внешний конфликт, после которого можно Cancel/Sync. Если сам PUT остался
+неопределённым, baseline/третье состояние не снимают блокировку и не запускают
+повторный PUT. При process crash до отправки намерение также требует ручной
+сверки, а не автоматического захвата по истечении времени.
