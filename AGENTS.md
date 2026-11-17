@@ -17,3 +17,5 @@
 - Stop after opening each PR and await the user's acceptance. Merge only after
   acceptance; after creating a PR, briefly explain the decisions and verification.
 - Later-stage files may be present untracked: keep them out of the current PR.
+- Do not add a standalone CLI or other user entry points beyond the requested
+  FastAPI API and web interface. Verify backend services with tests.
