@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Adrobot — кампании Keitaro</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">adrobot<span>Keitaro workspace</span></a>
+      <span id="connection" class="connection" role="status"
+        >Подключение к Keitaro…</span
+      >
+    </header>
+    <div id="message" class="message" role="alert" hidden></div>
+    <main class="layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <div class="section-title">
+            <h1>Новая кампания</h1>
+          </div>
+          <p class="subtle">Гео → Google. Остальные посетители → оффер.</p>
+          <form id="creator">
+            <fieldset id="creator-fields" disabled>
+              <label for="campaign-name">Название</label>
+              <input
+                id="campaign-name"
+                name="name"
+                value="test_tsybizov_"
+                maxlength="240"
+                required
+                autocomplete="off"
+              />
+              <label for="countries">Страны</label>
+              <input
+                id="countries"
+                name="countries"
+                placeholder="AU, MX, RO"
+                required
+                autocomplete="off"
+              />
+              <span class="hint">Двухбуквенные ISO-коды через запятую</span>
+              <label for="creator-offer">Оффер</label>
+              <input
+                id="creator-offer"
+                name="offer"
+                list="creator-offers"
+                placeholder="Поиск по ID или названию"
+                required
+                autocomplete="off"
+              />
+              <datalist id="creator-offers"></datalist>
+              <span id="creator-offer-hint" class="hint" aria-live="polite"
+                >Выберите существующий оффер Keitaro</span
+              >
+              <div class="settings-fields">
+                <label for="domain">Домен</label
+                ><select id="domain" required></select>
+                <label for="group">Группа кампаний</label
+                ><select id="group" required></select>
+                <label for="source">Источник</label
+                ><select id="source" required></select>
+              </div>
+              <button class="primary wide" type="submit">
+                Создать кампанию
+              </button>
+            </fieldset>
+          </form>
+          <p id="creation-result" class="hint" aria-live="polite"></p>
+          <button id="new-operation" class="text-button" type="button" hidden>
+            Начать новую операцию
+          </button>
+          <button
+            id="retry-connection"
+            class="text-button"
+            type="button"
+            hidden
+          >
+            Повторить подключение
+          </button>
+        </section>
+        <section class="panel campaign-picker">
+          <h2>Открыть кампанию</h2>
+          <form id="campaign-loader">
+            <label for="campaign-search">Поиск по названию или ID</label>
+            <input
+              id="campaign-search"
+              list="campaign-options"
+              placeholder="Введите ID или название"
+              autocomplete="off"
+              required
+            />
+            <datalist id="campaign-options"></datalist>
+            <span id="campaign-search-hint" class="hint" aria-live="polite"
+              >Выберите кампанию, чтобы загрузить потоки</span
+            >
+            <button class="secondary wide" type="submit">
+              Загрузить потоки
+            </button>
+          </form>
+        </section>
+        <p class="sidebar-note">
+          Черновики сохраняются автоматически.<br />В Keitaro изменения попадают
+          после Publish.
+        </p>
+      </aside>
+      <section class="workspace" aria-label="Редактор кампании">
+        <div id="empty" class="empty-state">
+          <div class="route-symbol" aria-hidden="true">↳</div>
+          <h2>Потоки вашей кампании</h2>
+          <p>
+            Создайте кампанию или загрузите существующую по ID.<br />Здесь
+            появятся офферы, веса и сохранённые черновики.
+          </p>
+        </div>
+        <div id="campaign-workspace" hidden>
+          <div class="workspace-heading">
+            <div>
+              <span id="campaign-meta" class="subtle"></span>
+              <h2 id="campaign-title"></h2>
+            </div>
+            <div class="workspace-actions">
+              <button id="local-refresh" class="text-button" type="button">
+                Обновить экран
+              </button>
+              <button id="sync" class="secondary" type="button">
+                Синхронизировать с Keitaro
+              </button>
+            </div>
+          </div>
+          <div class="campaign-link">
+            <span>Ссылка кампании</span><code id="tracking-url"></code
+            ><button id="copy-url" class="text-button" type="button">
+              Копировать
+            </button>
+          </div>
+          <p id="sync-hint" class="hint"></p>
+          <div id="streams" class="streams"></div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer">
+      Adrobot test · Управление кампаниями через Keitaro Admin API
+    </footer>
+  </body>
+</html>
