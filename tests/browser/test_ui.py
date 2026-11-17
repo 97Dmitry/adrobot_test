@@ -165,14 +165,17 @@ def test_pin_zero_validation_and_keyboard_search(ui_url, tracker):
         browser.close()
 
 
-def test_lost_creation_response_reuses_key_after_reload(ui_url, tracker):
+@pytest.mark.parametrize("normalization", ["country_case", "name_prefix"])
+def test_lost_creation_response_reuses_key_after_reload(ui_url, tracker, normalization):
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
         page = browser.new_page()
         page.goto(ui_url)
         expect(page.locator("#connection")).to_have_text("Keitaro подключён")
         page.get_by_label("Название", exact=True).fill("lost_reply")
-        page.get_by_label("Страны", exact=True).fill("AU")
+        page.get_by_label("Страны", exact=True).fill(
+            "au" if normalization == "country_case" else "AU"
+        )
         page.get_by_label("Оффер", exact=True).fill("10")
 
         def lose_response(route):
@@ -184,6 +187,10 @@ def test_lost_creation_response_reuses_key_after_reload(ui_url, tracker):
         expect(page.locator("#message")).to_contain_text("Нет связи")
         page.reload()
         expect(page.get_by_label("Название", exact=True)).to_have_value("lost_reply")
+        if normalization == "country_case":
+            page.get_by_label("Страны", exact=True).fill("AU")
+        else:
+            page.get_by_label("Название", exact=True).fill("test_tsybizov_lost_reply")
         page.get_by_role("button", name="Создать кампанию", exact=True).click()
         expect(page.locator("#campaign-title")).to_have_text("test_tsybizov_lost_reply")
         assert len(tracker.campaigns) == 2
@@ -213,4 +220,27 @@ def test_unknown_publication_blocks_cancel_and_only_reconciles(ui_url, tracker):
         expect(page.locator("#message")).to_contain_text("сверка")
         expect(stream.get_by_role("button", name="Publish", exact=True)).to_be_enabled()
         assert len([call for call in tracker.calls if call[:2] == ("PUT", "streams/201")]) == 1
+        browser.close()
+
+
+def test_changed_creation_parameters_require_explicit_new_operation(ui_url, tracker):
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+        page.goto(ui_url)
+        expect(page.locator("#connection")).to_have_text("Keitaro подключён")
+        page.get_by_label("Название", exact=True).fill("first")
+        page.get_by_label("Страны", exact=True).fill("AU")
+        page.get_by_label("Оффер", exact=True).fill("10")
+        page.get_by_role("button", name="Создать кампанию", exact=True).click()
+        expect(page.locator("#campaign-title")).to_have_text("test_tsybizov_first")
+        page.get_by_label("Название", exact=True).fill("second")
+        page.get_by_role("button", name="Создать кампанию", exact=True).click()
+        expect(page.locator("#message")).to_contain_text("Начать новую операцию")
+        assert len(tracker.campaigns) == 2
+        page.get_by_role("button", name="Начать новую операцию", exact=True).click()
+        page.get_by_label("Название", exact=True).fill("second")
+        page.get_by_role("button", name="Создать кампанию", exact=True).click()
+        expect(page.locator("#campaign-title")).to_have_text("test_tsybizov_second")
+        assert len(tracker.campaigns) == 3
         browser.close()

@@ -114,6 +114,19 @@ function numericID(input) {
   return Number(value);
 }
 
+function comparableCreation(body) {
+  const prefix = "test_tsybizov_";
+  const name = body.name.trim();
+  return JSON.stringify([
+    name.startsWith(prefix) ? name : prefix + name,
+    [...new Set(body.countries.map((code) => code.trim().toUpperCase()))],
+    body.offer_id,
+    body.domain_id,
+    body.group_id,
+    body.traffic_source_id,
+  ]);
+}
+
 function autocomplete(input, list, hint, resource) {
   let timer;
   let sequence = 0;
@@ -579,10 +592,20 @@ $("#creator").addEventListener("submit", async (event) => {
     return;
   }
   let operation = readStored("adrobot.creation");
-  if (!operation || JSON.stringify(operation.body) !== JSON.stringify(body)) {
+  if (
+    operation &&
+    comparableCreation(operation.body) !== comparableCreation(body)
+  ) {
+    message(
+      "Параметры сохранённой операции отличаются. Для сверки верните исходные параметры или перезагрузите страницу. Для другой кампании нажмите «Начать новую операцию»; это не отменяет предыдущую запись в Keitaro.",
+    );
+    return;
+  }
+  if (!operation) {
     operation = { key: crypto.randomUUID(), body };
     store("adrobot.creation", operation);
   }
+  body = operation.body;
   setWorking(true);
   $("#creator-fields").disabled = true;
   message("");
