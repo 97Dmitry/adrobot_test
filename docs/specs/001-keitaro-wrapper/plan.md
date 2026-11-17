@@ -44,7 +44,7 @@ SQLite и Alembic. Сервер отдаёт статический интерф
 - `app/static/`: HTML, CSS и JavaScript без внешних CDN.
 - `migrations/`: явные версии Alembic; schema не создаётся на старте приложения.
 - `tests/`: клиент, создатель, веса, редактор, API и миграции.
-- `scripts/live_smoke.py`: ограниченная проверка собственных тестовых кампаний.
+- `tests/test_http_live.py`: opt-in проверка HTTP API на собственной тестовой кампании.
 
 Основные API: `GET /api/catalogs`, `/api/offers?q=`, `/api/campaigns?q=`,
 `POST /api/campaigns` с `Idempotency-Key`, `POST /api/campaigns/{id}/sync`,
