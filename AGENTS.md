@@ -5,7 +5,7 @@
   Read its status before implementation. Plan/tasks/verification belong beside it.
 - Stack required by the assignment: FastAPI + SQLAlchemy; use Alembic migrations.
 - Never put API keys in tracked files, test fixtures, frontend responses or logs.
-- Campaigns created by the app and live checks must start with `test_tsibizov_`.
+- Campaigns created by the app and live checks must start with `test_tsybizov_`.
 - The shared test account contains other people's campaigns. Live write checks
   may target only campaigns created for this project and verified by prefix/ID.
 - API operations are through application/integration code; do not mutate stores

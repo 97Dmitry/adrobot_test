@@ -3,7 +3,7 @@ from typing import Annotated
 import pycountry
 from pydantic import BaseModel, Field, field_validator
 
-PREFIX = "test_tsibizov_"
+PREFIX = "test_tsybizov_"
 PositiveID = Annotated[int, Field(strict=True, gt=0)]
 
 
@@ -22,7 +22,7 @@ class CreateCampaign(BaseModel):
         if not value.startswith(PREFIX):
             value = PREFIX + value
         if not value.removeprefix(PREFIX).strip():
-            raise ValueError("Укажите название после test_tsibizov_.")
+            raise ValueError("Укажите название после test_tsybizov_.")
         return value
 
     @field_validator("countries")

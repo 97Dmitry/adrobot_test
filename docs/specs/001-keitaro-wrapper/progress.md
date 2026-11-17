@@ -26,6 +26,11 @@ GREEN: `uv run --extra dev pytest tests/test_keitaro.py tests/test_migrations.py
 `775133c8b649a61771de3fb4bbcef363aa862791`. GitHub Checks и GitGuardian — success.
 Следующий PR остаётся открытым до отдельной приёмки пользователя.
 
+Приёмка PR #3: исправлен nullable-return в creator.py; добавлена проверка
+сохранённого результата завершённой операции. Пользователь уточнил префикс
+новых кампаний: `test_tsybizov_`. Историческая кампания #212906 не переименована.
+Итоговые проверки этапов 1–2: 37 тестов (14 + 23), basedpyright creator.py — 0 ошибок.
+
 Этап 2: независимое review нашло неполную сверку маршрутизации и необработанный
 null в readback. Четыре регрессионных случая наблюдались RED, затем GREEN.
 Добавлена проверка идемпотентности в новой SQLAlchemy Session.

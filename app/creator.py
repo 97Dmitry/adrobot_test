@@ -11,7 +11,7 @@ from app.models import Campaign, CreationOperation
 from app.schemas import CreateCampaign
 
 
-def _details(op: CreationOperation) -> dict:
+def _details(op: CreationOperation) -> dict[str, str | int | None]:
     return {"operation_key": op.key, "campaign_id": op.campaign_id, "phase": op.phase}
 
 
@@ -77,7 +77,9 @@ def _verify_streams(client, op, request):
         )
 
 
-def _finish(session, client, op):
+def _finish(
+    session: Session, client: KeitaroClient, op: CreationOperation
+) -> dict[str, str | int | None]:
     remote = client.get(f"campaigns/{op.campaign_id}")
     if remote.get("state") != "active":
         raise RemoteError("Кампания создана, но включение не подтверждено.")
@@ -91,14 +93,15 @@ def _finish(session, client, op):
     )
     op.phase = "complete"
     op.error = ""
-    op.result = {**_details(op), "name": campaign.name, "tracking_url": campaign.tracking_url}
+    result = {**_details(op), "name": campaign.name, "tracking_url": campaign.tracking_url}
+    op.result = result
     session.commit()
-    return op.result
+    return result
 
 
 def create_campaign(
     session: Session, client: KeitaroClient, request: CreateCampaign, key: str
-) -> dict:
+) -> dict[str, str | int | None]:
     if not re.fullmatch(r"[A-Za-z0-9_-]{8,100}", key):
         raise DomainError("Idempotency-Key: ожидается 8–100 букв, цифр, дефисов или подчёркиваний.")
     payload = request.model_dump()
@@ -112,7 +115,15 @@ def create_campaign(
                 "idempotency_conflict",
             )
         if existing.phase == "complete":
-            return existing.result
+            result = existing.result
+            if result is None:
+                raise DomainError(
+                    "У завершённой операции отсутствует сохранённый результат.",
+                    500,
+                    "operation_corrupted",
+                    _details(existing),
+                )
+            return result
         try:
             if existing.campaign_id is None:
                 _find_created(client, existing)
@@ -146,7 +157,7 @@ def create_campaign(
         key=key,
         fingerprint=fingerprint,
         request=payload,
-        alias="tsibizov_" + uuid.uuid4().hex[:20],
+        alias="tsybizov_" + uuid.uuid4().hex[:20],
         phase="campaign_pending",
     )
     session.add(op)

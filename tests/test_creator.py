@@ -24,7 +24,7 @@ def request(**changes):
 def test_creates_disabled_then_configured_campaign(db, tracker):
     result = create_campaign(db, tracker.client, request(), "create-key-1")
     campaign = tracker.campaigns[result["campaign_id"]]
-    assert campaign["name"] == "test_tsibizov_demo"
+    assert campaign["name"] == "test_tsybizov_demo"
     assert campaign["state"] == "active"
     assert (campaign["domain_id"], campaign["group_id"], campaign["traffic_source_id"]) == (1, 2, 3)
     calls = [c for c in tracker.calls if c[0] != "GET"]
@@ -52,7 +52,7 @@ def test_creates_disabled_then_configured_campaign(db, tracker):
     [
         {"countries": ["XX"]},
         {"countries": []},
-        {"name": "test_tsibizov_"},
+        {"name": "test_tsybizov_"},
         {"offer_id": 0},
         {"countries": ["AUS"]},
     ],
@@ -60,6 +60,10 @@ def test_creates_disabled_then_configured_campaign(db, tracker):
 def test_invalid_form(changes):
     with pytest.raises(ValidationError):
         request(**changes)
+
+
+def test_campaign_name_preserves_corrected_prefix():
+    assert request(name="test_tsybizov_demo").name == "test_tsybizov_demo"
 
 
 @pytest.mark.parametrize(
@@ -174,4 +178,20 @@ def test_idempotency_survives_a_new_database_session(sessions, db, tracker):
     calls = len(tracker.calls)
     with sessions() as fresh:
         assert create_campaign(fresh, tracker.client, request(), "persistent-key-1") == result
+    assert len(tracker.calls) == calls
+
+
+def test_completed_operation_without_result_does_not_return_none(db, tracker):
+    create_campaign(db, tracker.client, request(), "missing-result-key-1")
+    operation = db.get(CreationOperation, "missing-result-key-1")
+    assert operation is not None
+    operation.result = None
+    db.commit()
+    calls = len(tracker.calls)
+
+    with pytest.raises(DomainError) as error:
+        create_campaign(db, tracker.client, request(), "missing-result-key-1")
+
+    assert error.value.status == 500
+    assert error.value.code == "operation_corrupted"
     assert len(tracker.calls) == calls

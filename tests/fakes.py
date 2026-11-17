@@ -17,7 +17,7 @@ class FakeTracker:
         self.campaigns = {
             100: {
                 "id": 100,
-                "name": "test_tsibizov_existing",
+                "name": "test_tsybizov_existing",
                 "domain": "https://tracking.example/",
                 "alias": "existing",
                 "state": "active",
